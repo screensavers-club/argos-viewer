@@ -4,104 +4,116 @@ import { useRoom } from "livekit-react";
 import axios from "axios";
 
 function App() {
-	const [err, setErr] = useState(null);
-	const { connect, participants } = useRoom();
-	const [track, setTrack] = useState(null);
-	const [trackKey, setTrackKey] = useState(null);
+  const [err, setErr] = useState(null);
+  const { connect, participants, room } = useRoom();
+  const [target, setTarget] = useState(null);
+  const [renderState, setRenderState] = useState(0);
+  const videoStreamRef = useRef({ track: null });
+  const [videoStreamRefState, setVideoStreamRefState] = useState(
+    videoStreamRef.current.track
+  );
 
-	useEffect(() => {
-		//authenticate upon load
-		let query = QueryString.parse(window.location.search, {
-			ignoreQueryPrefix: true,
-		});
-		let room = query.room;
-		let passcode = query.passcode;
+  useEffect(() => {
+    //authenticate upon load
+    let query = QueryString.parse(window.location.search, {
+      ignoreQueryPrefix: true,
+    });
+    let room = query.room;
+    let passcode = query.passcode;
 
-		axios
-			.post(process.env.REACT_APP_PEER_SERVER + "/viewer/room/join", {
-				room,
-				passcode,
-			})
-			.then((response) => {
-				const token = response.data.token;
-				connect(process.env.REACT_APP_LIVEKIT_SERVER, token);
-			})
-			.catch((err) => {
-				setErr(err);
-			});
-	}, []);
+    axios
+      .post(process.env.REACT_APP_PEER_SERVER + "/viewer/room/join", {
+        room,
+        passcode,
+      })
+      .then((response) => {
+        const token = response.data.token;
+        connect(process.env.REACT_APP_LIVEKIT_SERVER, token).then(() => {
+          setRenderState(renderState + 1);
+        });
+      })
+      .catch((err) => {
+        setErr(err);
+      });
+  }, []);
 
-	useEffect(() => {
-		let query = QueryString.parse(window.location.search, {
-			ignoreQueryPrefix: true,
-		});
-		let subject = query.target;
-		let p = participants.find((p) => p.identity === subject);
+  useEffect(() => {
+    const query = QueryString.parse(window.location.search, {
+      ignoreQueryPrefix: true,
+    });
+    const _t = query.target;
 
-		let videoTrack, videoKey;
+    let p = participants.find((p) => p.identity === _t);
+    if (p) {
+      let videoTrack;
+      if (p) {
+        p?.videoTracks.forEach((track, key) => {
+          if (!videoTrack) {
+            videoTrack = track;
+          }
+        });
+      }
+      setTarget(p);
+      videoStreamRef.current.track = videoTrack;
+      setVideoStreamRefState(videoStreamRef.current.track);
+    }
+  }, [participants, room, renderState]);
 
-		p?.videoTracks.forEach((_track, _key) => {
-			if (!videoTrack) {
-				videoTrack = _track;
-				videoKey = _key;
-			}
-		});
+  if (err) {
+    return <div>An error has occurred</div>;
+  }
 
-		if (videoKey !== trackKey) {
-			setTrack(videoTrack);
-			setTrackKey(videoKey);
-		}
-	}, [participants]);
-
-	if (err) {
-		return <div>An error has occurred</div>;
-	}
-
-	return (
-		<div className="App">
-			{trackKey}
-			<VideoFrame track={track} key={trackKey} />
-		</div>
-	);
+  return (
+    <div className="App">
+      <VideoFrame
+        key={videoStreamRefState?.current?.trackSid}
+        videoTrack={videoStreamRefState}
+        participant={target}
+        renderState={renderState}
+      />
+    </div>
+  );
 }
 
 export default App;
 
-function VideoFrame({ track }) {
-	const ref = useRef(null);
+function VideoFrame({ videoTrack, participant, sid }) {
+  const t = videoTrack?.track;
+  const ref = useRef(null);
 
-	useEffect(() => {
-		const el = ref.current;
-		if (!el) {
-			return;
-		}
-		el.muted = true;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      return;
+    }
+    el.muted = true;
 
-		track?.track?.attach(el);
+    if (videoTrack?.track) {
+      videoTrack.track?.attach(el);
+      console.log("attach");
+    }
 
-		console.log(track, track?.track, track?.track?.attachedElements);
+    return () => {
+      videoTrack?.track?.detach(el);
+    };
+  }, [t]);
 
-		return () => {
-			track?.track?.detach(el);
-		};
-	}, []);
-
-	return (
-		<div>
-			<video
-				style={{
-					width: "100%",
-					height: "100%",
-					position: "fixed",
-					top: 0,
-					left: 0,
-					objectFit: "cover",
-					zIndex: 300,
-				}}
-				autoPlay
-				ref={ref}
-				key={track?.track?.sid}
-			/>
-		</div>
-	);
+  return (
+    <div>
+      <video
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          objectFit: "cover",
+          zIndex: 300,
+        }}
+        autoPlay
+        ref={ref}
+        key={participant?.identity}
+      />
+    </div>
+  );
 }
