@@ -12,6 +12,9 @@ function App() {
   const [videoStreamRefState, setVideoStreamRefState] = useState(
     videoStreamRef.current.track
   );
+  const [audioStreamRefState, setAudioStreamRefState] = useState(null);
+  const audioStreamRef = useRef(null);
+  const audioElemRef = useRef();
 
   useEffect(() => {
     //authenticate upon load
@@ -36,6 +39,29 @@ function App() {
         setErr(err);
       });
   }, []);
+
+  useEffect(() => {
+    // get reference to audiostream
+    if (target?.audioTracks && target.metadata === "PARENT") {
+      let firstAudioTrack;
+      target.audioTracks.forEach((track, key) => {
+        if (!firstAudioTrack) {
+          firstAudioTrack = track;
+        }
+      });
+
+      audioStreamRef.current = firstAudioTrack;
+      setAudioStreamRefState(audioStreamRef.current);
+    }
+  }, [target]);
+
+  useEffect(() => {
+    if (audioStreamRefState?.track) {
+      console.log(audioStreamRefState.track);
+    }
+    audioElemRef.current = audioStreamRefState?.track?.attach();
+    console.log(audioStreamRefState, audioElemRef.current);
+  }, [audioStreamRefState]);
 
   useEffect(() => {
     const query = QueryString.parse(window.location.search, {
@@ -65,12 +91,17 @@ function App() {
 
   return (
     <div className="App">
-      <VideoFrame
-        key={videoStreamRefState?.current?.trackSid}
-        videoTrack={videoStreamRefState}
-        participant={target}
-        renderState={renderState}
-      />
+      {videoStreamRefState ? (
+        <VideoFrame
+          key={videoStreamRefState?.current?.trackSid}
+          videoTrack={videoStreamRefState}
+          participant={target}
+          renderState={renderState}
+        />
+      ) : (
+        <></>
+      )}
+      {audioStreamRefState?.trackSid}
     </div>
   );
 }
