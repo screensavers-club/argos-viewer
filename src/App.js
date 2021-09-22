@@ -16,6 +16,7 @@ function App() {
   const audioStreamRef = useRef(null);
   const audioElemRef = useRef();
   const [withAudio, setWithAudio] = useState(false);
+  const [hideButton, setHideButton] = useState(false);
 
   useEffect(() => {
     //authenticate upon load
@@ -58,7 +59,6 @@ function App() {
   }, [target]);
 
   useEffect(() => {
-    console.log(audioStreamRefState?.audioTrack);
     audioStreamRefState?.audioTrack?.attach(audioElemRef.current);
   }, [audioStreamRefState, audioStreamRefState?.audioTrack]);
 
@@ -104,7 +104,9 @@ function App() {
         <>
           <audio ref={audioElemRef} autoPlay />
           <button
+            style={{ zIndex: hideButton ? -1 : 2000, position: "fixed" }}
             onClick={() => {
+              setHideButton(true);
               audioElemRef.current.play();
             }}
           >
