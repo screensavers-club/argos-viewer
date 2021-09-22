@@ -15,6 +15,7 @@ function App() {
   const [audioStreamRefState, setAudioStreamRefState] = useState(null);
   const audioStreamRef = useRef(null);
   const audioElemRef = useRef();
+  const [withAudio, setWithAudio] = useState(false);
 
   useEffect(() => {
     //authenticate upon load
@@ -23,6 +24,7 @@ function App() {
     });
     let room = query.room;
     let passcode = query.passcode;
+    setWithAudio(query.audio === "1");
 
     axios
       .post(process.env.REACT_APP_PEER_SERVER + "/viewer/room/join", {
@@ -42,7 +44,7 @@ function App() {
 
   useEffect(() => {
     // get reference to audiostream
-    if (target?.audioTracks && target.metadata === "PARENT") {
+    if (target?.audioTracks && withAudio) {
       let firstAudioTrack;
       target.audioTracks.forEach((track, key) => {
         if (!firstAudioTrack) {
