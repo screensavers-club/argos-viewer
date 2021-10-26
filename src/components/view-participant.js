@@ -2,7 +2,6 @@ import { useParticipant, VideoRenderer } from "livekit-react";
 
 export default function ViewParticipant({ participant, withAudio }) {
   let { publications } = useParticipant(participant);
-  console.log(publications);
 
   const videoPub = publications.find((p) => p.kind === "video");
 
@@ -14,7 +13,6 @@ export default function ViewParticipant({ participant, withAudio }) {
     videoPub.setSubscribed(true);
   }
 
-  console.log(videoPub);
   if (!videoPub.track) {
     return <></>;
   }

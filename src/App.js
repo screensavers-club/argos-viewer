@@ -4,13 +4,16 @@ import { useRoom } from "livekit-react";
 import axios from "axios";
 import ViewParticipant from "./components/view-participant";
 import styled from "styled-components";
+import ParticipantAudio from "./components/participant-audio";
 
 function App() {
-  const { connect, participants, room } = useRoom();
+  const { connect, participants } = useRoom();
   const [err, setErr] = useState(null);
   const [withAudio, setWithAudio] = useState(false);
   const [targetNickname, setTargetNickname] = useState(null);
   const [target, setTarget] = useState(null);
+  const [delay, setDelay] = useState(0);
+  const intervalRef = useRef();
 
   useEffect(() => {
     let query = QueryString.parse(window.location.search, {
@@ -38,6 +41,21 @@ function App() {
       .catch((err) => {
         setErr(err);
       });
+
+    intervalRef.current = window.setInterval(() => {
+      axios
+        .get(`${process.env.REACT_APP_PEER_SERVER}/${room}/${nickname}/mix`)
+        .then(({ data }) => {
+          let _delay = data?.mix?.delay;
+          if (_delay === 0 || _delay) {
+            setDelay(parseInt(_delay) / 1000);
+          }
+        });
+    }, 2000);
+
+    return () => {
+      window.clearInterval(intervalRef);
+    };
   }, []);
 
   useEffect(() => {
@@ -45,7 +63,6 @@ function App() {
       return;
     }
     let p = participants.find((p) => {
-      console.log(JSON.parse(p.metadata || "{}")?.nickname);
       return JSON.parse(p.metadata || "{}")?.nickname === targetNickname;
     });
     if (p) {
@@ -69,6 +86,11 @@ function App() {
 
   return (
     <Frame>
+      {withAudio ? (
+        <ParticipantAudio participant={target} delay={delay} />
+      ) : (
+        false
+      )}
       <ViewParticipant participant={target} withAudio={withAudio} />
     </Frame>
   );
