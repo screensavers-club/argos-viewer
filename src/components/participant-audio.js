@@ -50,7 +50,7 @@ export default function ParticipantAudio({ participant, delay, startPlay }) {
               AudioCtxRef.current = new AudioContext();
               delayNode.current = new DelayNode(AudioCtxRef.current, {
                 maxDelayTime: 5,
-                delayTime: 0,
+                delayTime: delay,
               });
 
               const audioDom = track.attach();
