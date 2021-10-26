@@ -1,7 +1,7 @@
 import { useParticipant } from "livekit-react";
 import { useEffect, useRef, useState } from "react";
 
-export default function ParticipantAudio({ participant, delay }) {
+export default function ParticipantAudio({ participant, delay, startPlay }) {
   const { publications } = useParticipant(participant);
   const [track, setTrack] = useState(null);
 
@@ -9,21 +9,9 @@ export default function ParticipantAudio({ participant, delay }) {
   const mediaStream = useRef();
   const mediaStreamSource = useRef();
   const delayNode = useRef();
+  const audioDomRef = useRef();
 
-  useEffect(() => {
-    AudioCtxRef.current = new AudioContext();
-    delayNode.current = new DelayNode(AudioCtxRef.current, {
-      maxDelayTime: 5,
-      delayTime: 0,
-    });
-
-    return () => {
-      mediaStream.current = null;
-      mediaStreamSource.current?.disconnect();
-      delayNode.current?.disconnect();
-      AudioCtxRef.current.close();
-    };
-  }, []);
+  const [initAudio, setInitAudio] = useState(false);
 
   useEffect(() => {
     const audioPub = publications.find((p) => {
@@ -37,21 +25,7 @@ export default function ParticipantAudio({ participant, delay }) {
     setTrack(audioPub?.track);
   }, [publications]);
 
-  useEffect(() => {
-    if (
-      !mediaStream.current &&
-      track &&
-      track.mediaStreamTrack instanceof MediaStreamTrack
-    ) {
-      mediaStream.current = new MediaStream([track.mediaStreamTrack]);
-      mediaStreamSource.current = AudioCtxRef.current.createMediaStreamSource(
-        mediaStream.current
-      );
-      mediaStreamSource.current
-        .connect(delayNode.current)
-        .connect(AudioCtxRef.current.destination);
-    }
-  }, [track]);
+  useEffect(() => {}, [track]);
 
   useEffect(() => {
     if (delayNode.current) {
@@ -59,5 +33,45 @@ export default function ParticipantAudio({ participant, delay }) {
     }
   }, [delay]);
 
-  return <></>;
+  return (
+    <>
+      {!initAudio && (
+        <button
+          style={{ zIndex: 200, position: "fixed", top: "2" }}
+          onClick={() => {
+            if (
+              !mediaStream.current &&
+              track &&
+              track.mediaStreamTrack instanceof MediaStreamTrack
+            ) {
+              const AudioContext =
+                window.AudioContext || window.webkitAudioContext;
+
+              AudioCtxRef.current = new AudioContext();
+              delayNode.current = new DelayNode(AudioCtxRef.current, {
+                maxDelayTime: 5,
+                delayTime: 0,
+              });
+
+              const audioDom = track.attach();
+              audioDom.muted = true;
+
+              mediaStream.current = new MediaStream([track.mediaStreamTrack]);
+              mediaStreamSource.current =
+                AudioCtxRef.current.createMediaStreamSource(
+                  mediaStream.current
+                );
+              mediaStreamSource.current
+                .connect(delayNode.current)
+                .connect(AudioCtxRef.current.destination);
+            }
+            setInitAudio(true);
+          }}
+        >
+          start audio
+        </button>
+      )}
+      <audio ref={audioDomRef} />
+    </>
+  );
 }

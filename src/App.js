@@ -14,6 +14,7 @@ function App() {
   const [target, setTarget] = useState(null);
   const [delay, setDelay] = useState(0);
   const intervalRef = useRef();
+  const [startPlay, setStartPlay] = useState(false);
 
   useEffect(() => {
     let query = QueryString.parse(window.location.search, {
@@ -87,7 +88,11 @@ function App() {
   return (
     <Frame>
       {withAudio ? (
-        <ParticipantAudio participant={target} delay={delay} />
+        <ParticipantAudio
+          participant={target}
+          delay={delay}
+          startPlay={startPlay}
+        />
       ) : (
         false
       )}
