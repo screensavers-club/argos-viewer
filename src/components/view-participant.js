@@ -1,4 +1,5 @@
 import { useParticipant, VideoRenderer } from "livekit-react";
+import { VideoQuality } from "livekit-client";
 
 export default function ViewParticipant({ participant, withAudio }) {
   let { publications } = useParticipant(participant);
@@ -7,6 +8,10 @@ export default function ViewParticipant({ participant, withAudio }) {
 
   if (!videoPub) {
     return <></>;
+  }
+
+  if (typeof videoPub.setVideoQuality === "function") {
+    videoPub.setVideoQuality(VideoQuality.HIGH);
   }
 
   if (typeof videoPub.setSubscribed === "function") {
