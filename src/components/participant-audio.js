@@ -1,4 +1,4 @@
-import { useParticipant } from "livekit-react";
+import { useParticipant, AudioRenderer } from "livekit-react";
 import { useEffect, useRef, useState } from "react";
 
 export default function ParticipantAudio({ participant, delay, startPlay }) {
@@ -9,7 +9,6 @@ export default function ParticipantAudio({ participant, delay, startPlay }) {
   const mediaStream = useRef();
   const mediaStreamSource = useRef();
   const delayNode = useRef();
-  const audioDomRef = useRef();
 
   const [initAudio, setInitAudio] = useState(false);
 
@@ -18,14 +17,8 @@ export default function ParticipantAudio({ participant, delay, startPlay }) {
       return p.kind === "audio";
     });
 
-    if (audioPub && typeof audioPub.setSubscribed === "function") {
-      audioPub.setSubscribed(true);
-    }
-
     setTrack(audioPub?.track);
   }, [publications]);
-
-  useEffect(() => {}, [track]);
 
   useEffect(() => {
     if (delayNode.current) {
@@ -68,10 +61,10 @@ export default function ParticipantAudio({ participant, delay, startPlay }) {
             setInitAudio(true);
           }}
         >
-          start audio
+          start audio {participant.metadata}
         </button>
       )}
-      <audio ref={audioDomRef} />
+      {/* <audio ref={audioDomRef} /> */}
     </>
   );
 }

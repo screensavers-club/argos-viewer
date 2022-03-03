@@ -2,8 +2,8 @@ import QueryString from "qs";
 import { useEffect, useState, useRef } from "react";
 import { useRoom } from "livekit-react";
 import axios from "axios";
-import ViewParticipant from "./components/view-participant";
 import styled from "styled-components";
+import ViewParticipant from "./components/view-participant";
 import ParticipantAudio from "./components/participant-audio";
 
 function App() {
@@ -15,6 +15,25 @@ function App() {
   const [delay, setDelay] = useState(0);
   const intervalRef = useRef();
   const [startPlay, setStartPlay] = useState(false);
+
+  useEffect(() => {
+    participants.forEach((p) => {
+      const meta = JSON.parse(p.metadata);
+      if (meta.type === "CHILD" && meta.nickname === targetNickname) {
+        p.audioTracks.forEach((t) => {
+          if (!t.isSubscribed) {
+            t.setSubscribed(true);
+          }
+        });
+      } else {
+        p.audioTracks.forEach((t) => {
+          if (t.isSubscribed) {
+            t.setSubscribed(false);
+          }
+        });
+      }
+    });
+  }, [participants]);
 
   useEffect(() => {
     let query = QueryString.parse(window.location.search, {
